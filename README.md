@@ -7,6 +7,13 @@
 
 This package contains code for hypergraph modularity clustering algorithms, based on the generative model described in
 
+**Abigail Headstrom Thesis 2026**
+This project contains the updates and additions from my senior thesis. Specifically: 
+- THESIS_EXPERIMENTATION.ipynb for all experimentation code
+- Export_to_julia.py for exporting xgi datasets in a julia-readable format that can be uploaded to the repository's data section.
+- plot_partition_mapping.py to graph the generated partition maps using existing igraph tools.
+- Updaed AON_louvain algorithm to updare the beta/gamma parameter estimation phase.  
+
 **Generative hypergraph clustering: from blockmodels to modularity**  
 Philip S. Chodrow, Nate Veldt, Austin R. Benson  
 [preprint](https://arxiv.org/abs/2101.09611)
