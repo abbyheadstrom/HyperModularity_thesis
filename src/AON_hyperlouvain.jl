@@ -44,6 +44,8 @@ function AON_Louvain(H::hypergraph,β::Vector{Float64},γ::Vector{Float64};maxit
 	Calling AON_Louvain without explicit intensity function Ω. Just requires
 	cut and volume penalties β and γ. Assumes hyperedges are of size >= 2.
 	"""
+
+    println("hello")
 	if length(H.E[1]) > 0
 		println("This code assumes a hypergraph where hyperedges have at least two nodes.")
 	end
@@ -645,6 +647,11 @@ function learn_omega_aon(e2n,weights,Z,kmax,d,n)
     Z is the clustering
     """
 
+    # If only one cluster, skip parameter update and return last known good values
+    # ADDING THIS CODE
+    # This protects against getting stuck in one cluster 
+    # This is different from regular graph champ, where they can control the cluster sizes
+
     L = maximum(Z)
     m = length(e2n)
     ClusVol = zeros(L)			# volume of clusters
@@ -657,6 +664,8 @@ function learn_omega_aon(e2n,weights,Z,kmax,d,n)
 
 	# initialize to small positive number as a heuristic, to avoid taking log of 0
     EdgesAndCuts[1,:] = 0.01*ones(1,kmax)
+    
+    EdgesAndCuts[2,:] = 0.01*ones(1,kmax)
 
     # Compute the cut penalty for each hyperedge size
     for j = 1:m
@@ -695,7 +704,9 @@ function learn_omega_aon(e2n,weights,Z,kmax,d,n)
 		# 	# we replace with a high but finite value instead
 		# 	β[k] = 1e3
 		# end
-        γ[k] = omega[1,k]-omega[2,k]
+        # CHANGED THIS FROM ORIGNAL CODE TO DIVIDE BY B[K]
+        γ[k] = (omega[1,k]-omega[2,k])/β[k]
+        # println("gamma: $(γ[k])")
     end
     return β, γ,omega
 end
@@ -819,33 +830,49 @@ function modularity_aon(H::hypergraph,Z::Vector{Int64},omega::Array{Float64,2};l
         ClusVol[Z[i]] += H.D[i]
     end
 
+    # println("betas: ")
+
 	obj = 0
+    cut_penalty = 0
 	for k = kmin:kmax
 		# Compute cut penalty of the objective
 		El = H.E[k]
 		for edge in keys(El)
 			if ~allsame(Z[edge])
 				obj -= El[edge]*β[k]
+                cut_penalty -= El[edge]*β[k]
 			end
 		end
+        # println("cut penalty with betas: $(cut_penalty)")
 
 		# Volume penalty of the objective
+        volume_penalty = 0
 		for l = 1:L
 			obj -= β[k]*γ[k]*ClusVol[l]^k
+            volume_penalty -= ClusVol[l]^k
 		end
+        # println("volume pentalty (no betas and gammas): $(volume_penalty)")
 	end
 
+
 	# Additional term that is constant with respect to clustervec
+    # saving the additional term
+    new_term = 0
 	for k = kmin:kmax
 		obj += β[k]*mvec[k]
 		El = H.E[k]
+        new_term += β[k]*mvec[k]
 		for edge in keys(El)
 			obj += El[edge]*log(omega[2,k])
+            new_term = El[edge]*log(omega[2,k])
 			p = partitionize(Z[edge])
 			bR = Combinatorics.multinomial(p...)
 			obj -= prod(H.D[edge])*omega[2,k]*bR
+            new_term = prod(H.D[edge])*omega[2,k]*bR
 		end
 	end
+
+    # println("extra term: $(new_term)")
 
 	if likelihood == true
 		# extra part for log-likelihood computation
