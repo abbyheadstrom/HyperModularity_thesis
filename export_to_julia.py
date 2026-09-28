@@ -1,6 +1,6 @@
 # This file takes the hypergraph in xgi and exports it to the format
 # expected by HyperModularity.jl's read_hypergraph_data() function
-
+# It can be used to take any hypergraph from the xgi database and use it on the Julia code
 
 import xgi
 import os
